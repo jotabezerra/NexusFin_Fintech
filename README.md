@@ -35,8 +35,8 @@ executado localmente com o banco H2 em memória ou publicado como demonstração
 estática no GitHub Pages.
 
 > **Importante:** o GitHub Pages publica somente o frontend. A demonstração
-> pública utiliza dados fictícios no navegador; ela não se conecta à API nem
-> salva alterações após recarregar a página.
+> pública começa sem registros de exemplo e usa o armazenamento local do
+> navegador; ela não se conecta à API nem compartilha dados entre visitantes.
 
 ## Funcionalidades
 
@@ -147,8 +147,13 @@ publicação automaticamente, inclusive para repositórios de projeto.
 
 ### Como funciona a versão pública
 
-- Os registros são exemplos sintéticos carregados no navegador.
-- As alterações ficam apenas na memória da sessão e desaparecem ao recarregar.
+- A demonstração começa sem usuários, contas ou lançamentos de exemplo.
+- Cadastros e alterações ficam salvos no armazenamento local deste navegador e
+  continuam disponíveis após recarregar a página; outros visitantes não os veem.
+- Lançamentos de receita e despesa atualizam o saldo da conta selecionada; editar
+  ou excluir um lançamento recalcula o saldo correspondente.
+- Para apagar os dados locais da demonstração, abra o console do navegador,
+  execute `localStorage.removeItem('nexusfin-public-demo-v1')` e recarregue.
 - O frontend não envia dados à API e não precisa de um servidor Java ativo.
 - O envio de comprovantes está desativado.
 - O login `demo`/`demo` é uma barreira visual, não um mecanismo de segurança.

@@ -1,86 +1,44 @@
-const today = new Date();
-const currentYear = today.getFullYear();
-const monthIndex = today.getMonth();
+const demoStorageKey = 'nexusfin-public-demo-v1';
 
-function dateInCurrentYear(monthOffset, day) {
-    const date = new Date(currentYear, Math.max(0, monthIndex - monthOffset), day);
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const dateOfMonth = String(date.getDate()).padStart(2, '0');
-    return `${date.getFullYear()}-${month}-${dateOfMonth}`;
+function createEmptyState() {
+    return { users: [], contas: [], lancamentos: [] };
 }
 
-function createInitialState() {
-    const users = [
-        { idUsuario: 1, nome: 'Ana Exemplo', email: 'ana.exemplo@example.com', dtCriacao: dateInCurrentYear(5, 5) },
-        { idUsuario: 2, nome: 'Bruno Demonstração', email: 'bruno.demo@example.com', dtCriacao: dateInCurrentYear(3, 12) },
-    ];
-    const contas = [
-        { idConta: 1, nrConta: 'DEMO-001', saldo: 12850.75, usuario: { idUsuario: 1 } },
-        { idConta: 2, nrConta: 'DEMO-002', saldo: -235.5, usuario: { idUsuario: 2 } },
-    ];
-    const lancamentos = [
-        {
-            idLancamento: 1,
-            dtLancamento: dateInCurrentYear(0, 3),
-            vlLancamento: 4850,
-            categoria: 'RECEITA',
-            tipoLancamento: 'Vendas',
-            descricao: 'Vendas da loja demonstrativa',
-            contaBancaria: contas[0],
-            incluirNotaFiscal: false,
-            statusPagamento: 'PAGA',
-        },
-        {
-            idLancamento: 2,
-            dtLancamento: dateInCurrentYear(0, 8),
-            vlLancamento: 1250.5,
-            categoria: 'DESPESA',
-            tipoLancamento: 'Marketing',
-            descricao: 'Campanha de divulgação fictícia',
-            contaBancaria: contas[0],
-            incluirNotaFiscal: false,
-            statusPagamento: 'PAGA',
-        },
-        {
-            idLancamento: 3,
-            dtLancamento: dateInCurrentYear(1, 14),
-            vlLancamento: 3200,
-            categoria: 'RECEITA',
-            tipoLancamento: 'Serviços',
-            descricao: 'Projeto de consultoria demonstrativo',
-            contaBancaria: contas[0],
-            incluirNotaFiscal: true,
-            nrNotaFiscal: `DEMO-${currentYear}-001`,
-            statusNotaFiscal: 'SIMULADA',
-            statusPagamento: 'PROCESSADA',
-        },
-        {
-            idLancamento: 4,
-            dtLancamento: dateInCurrentYear(1, 18),
-            vlLancamento: 489.9,
-            categoria: 'DESPESA',
-            tipoLancamento: 'Serviços',
-            descricao: 'Assinatura fictícia de software',
-            contaBancaria: contas[1],
-            incluirNotaFiscal: true,
-            nrNotaFiscal: `DEMO-${currentYear}-002`,
-            statusNotaFiscal: 'SIMULADA',
-            statusPagamento: 'PAGA',
-            bancoPagamento: 'Nubank',
-        },
-        {
-            idLancamento: 5,
-            dtLancamento: dateInCurrentYear(2, 22),
-            vlLancamento: 760,
-            categoria: 'DESPESA',
-            tipoLancamento: 'Fornecedores e insumos',
-            descricao: 'Materiais de demonstração',
-            contaBancaria: contas[0],
-            incluirNotaFiscal: false,
-            statusPagamento: 'PENDENTE',
-        },
-    ];
-    return { users, contas, lancamentos };
+function readState(storage) {
+    const savedState = storage?.getItem(demoStorageKey);
+    if (savedState === null || savedState === undefined) return createEmptyState();
+
+    const state = JSON.parse(savedState);
+    if (
+        !state
+        || !Array.isArray(state.users)
+        || !Array.isArray(state.contas)
+        || !Array.isArray(state.lancamentos)
+    ) {
+        throw new Error('Os dados locais da demonstração estão inválidos. Limpe os dados do site e recarregue a página.');
+    }
+    const accountsById = new Map(state.contas.map((account) => [Number(account.idConta), account]));
+    state.lancamentos = state.lancamentos.map((record) => ({
+        ...record,
+        contaBancaria: record.contaBancaria?.idConta == null
+            ? null
+            : accountsById.get(Number(record.contaBancaria.idConta)) || null,
+    }));
+    return state;
+}
+
+function saveState(storage, state) {
+    storage?.setItem(demoStorageKey, JSON.stringify(state));
+}
+
+function movement(record) {
+    const amount = Number(record.vlLancamento) || 0;
+    return record.categoria === 'RECEITA' ? amount : -amount;
+}
+
+function applyMovement(account, amount) {
+    if (!account) return;
+    account.saldo = (Number(account.saldo) || 0) + amount;
 }
 
 function response(data, status = 200) {
@@ -153,7 +111,10 @@ function summarize(records, year) {
 }
 
 export function createDemoApi() {
-    const state = createInitialState();
+    const storage = window.localStorage;
+    const state = readState(storage);
+    const persist = () => saveState(storage, state);
+    const currentYear = new Date().getFullYear();
 
     return {
         async get(path) {
@@ -172,6 +133,7 @@ export function createDemoApi() {
             if (pathname === '/usuarios') {
                 const user = { ...body, idUsuario: Math.max(0, ...state.users.map((item) => item.idUsuario)) + 1 };
                 state.users.push(user);
+                persist();
                 return response(user, 201);
             }
             if (pathname === '/contas') {
@@ -181,6 +143,7 @@ export function createDemoApi() {
                     usuario: state.users[0] ? { idUsuario: state.users[0].idUsuario } : null,
                 };
                 state.contas.push(account);
+                persist();
                 return response(account, 201);
             }
             if (pathname === '/lancamentos') {
@@ -193,6 +156,8 @@ export function createDemoApi() {
                     statusPagamento: body.statusPagamento || 'PENDENTE',
                 };
                 state.lancamentos.unshift(record);
+                applyMovement(account, movement(record));
+                persist();
                 return response(record, 201);
             }
             if (/^\/lancamentos\/\d+\/comprovante$/.test(pathname)) {
@@ -208,6 +173,7 @@ export function createDemoApi() {
                 const index = state.users.findIndex((item) => item.idUsuario === Number(userMatch[1]));
                 if (index < 0) throw missingRecord('Usuário', userMatch[1]);
                 state.users[index] = { ...state.users[index], ...body };
+                persist();
                 return response(state.users[index]);
             }
 
@@ -216,6 +182,12 @@ export function createDemoApi() {
                 const index = state.contas.findIndex((item) => item.idConta === Number(accountMatch[1]));
                 if (index < 0) throw missingRecord('Conta', accountMatch[1]);
                 state.contas[index] = { ...state.contas[index], ...body };
+                state.lancamentos.forEach((record) => {
+                    if (record.contaBancaria?.idConta === state.contas[index].idConta) {
+                        record.contaBancaria = state.contas[index];
+                    }
+                });
+                persist();
                 return response(state.contas[index]);
             }
 
@@ -228,12 +200,15 @@ export function createDemoApi() {
                 if (index < 0) throw missingRecord('Lançamento', match[1]);
                 const current = state.lancamentos[index];
                 const updated = { ...current, ...body };
+                applyMovement(current.contaBancaria, -movement(current));
                 if (body.contaBancaria?.idConta !== undefined) {
                     updated.contaBancaria = state.contas.find(
                         (account) => account.idConta === Number(body.contaBancaria.idConta),
                     ) || null;
                 }
+                applyMovement(updated.contaBancaria, movement(updated));
                 state.lancamentos[index] = updated;
+                persist();
                 return response(state.lancamentos[index]);
             }
 
@@ -251,6 +226,7 @@ export function createDemoApi() {
                     throw conflict('Este usuário possui contas bancárias vinculadas.');
                 }
                 state.users.splice(userIndex, 1);
+                persist();
                 return response(null, 204);
             }
 
@@ -263,6 +239,7 @@ export function createDemoApi() {
                     throw conflict('Esta conta possui lançamentos vinculados.');
                 }
                 state.contas.splice(accountIndex, 1);
+                persist();
                 return response(null, 204);
             }
 
@@ -270,7 +247,9 @@ export function createDemoApi() {
             if (recordMatch) {
                 const index = state.lancamentos.findIndex((item) => item.idLancamento === Number(recordMatch[1]));
                 if (index < 0) throw missingRecord('Lançamento', recordMatch[1]);
+                applyMovement(state.lancamentos[index].contaBancaria, -movement(state.lancamentos[index]));
                 state.lancamentos.splice(index, 1);
+                persist();
                 return response(null, 204);
             }
 

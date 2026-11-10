@@ -24,6 +24,8 @@ O workflow `../.github/workflows/deploy-pages.yml` compila e publica uma
 demonstração pública ao enviar alterações para a branch `main`. Ative
 **Settings → Pages → GitHub Actions** no repositório.
 
-No Pages, o frontend usa uma API simulada com dados fictícios em memória; não
-se conecta ao backend e não salva alterações depois que a página é recarregada.
-O envio de comprovantes fica desativado.
+No Pages, o frontend usa uma API simulada e começa sem dados de exemplo. Os
+cadastros ficam no armazenamento local do navegador e não são compartilhados
+com outros visitantes. O saldo da conta é atualizado ao criar, editar ou excluir
+lançamentos. A demonstração não se conecta ao backend e o envio de comprovantes
+fica desativado.
