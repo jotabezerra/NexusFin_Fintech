@@ -178,11 +178,6 @@ function Login({ onLogin }) {
             <section className="login-brand">
                 <Logo dark />
                 <p>Tecnologia que simplifica,<br />lucro que aparece.</p>
-                {isPublicDemo && (
-                    <p className="public-demo-notice" role="note">
-                        Demonstração pública com dados fictícios. Alterações valem apenas nesta sessão.
-                    </p>
-                )}
             </section>
             <section className="login-side">
                 <form className="login-card" onSubmit={submit}>
@@ -1255,11 +1250,6 @@ export default function NexusFinApp() {
         const active = navigation.find((item) => item.path === path)?.id || '';
         return (
             <div className="nexus-app">
-                {isPublicDemo && (
-                    <p className="public-demo-banner" role="note">
-                        Demonstração pública — dados fictícios; alterações não são salvas e reiniciam ao recarregar.
-                    </p>
-                )}
                 <AppHeader
                     username={username}
                     profileAvatar={profileAvatar}
