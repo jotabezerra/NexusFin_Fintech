@@ -1802,21 +1802,27 @@
     }
 
     .app-body {
+        min-width: 0;
         min-height: calc(100vh - 118px);
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
     }
 
     .sidebar {
+        width: 100%;
+        min-width: 0;
         padding: 8px;
         flex-direction: row;
-        justify-content: space-around;
+        justify-content: flex-start;
         gap: 4px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
     }
 
     .nav-item {
-        width: auto;
+        width: 44px;
         min-width: 44px;
+        flex: 0 0 44px;
         min-height: 42px;
         padding: 0 5px;
     }
