@@ -2,8 +2,6 @@
 
 <img src="./assets/nexusfin-logo.png" alt="Logo NexusFin" width="380" />
 
-# NexusFin
-
 ### Controle financeiro simples, organizado e visual
 
 Aplicação web demonstrativa para acompanhar contas, movimentações e indicadores
